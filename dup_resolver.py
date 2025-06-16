@@ -1,8 +1,8 @@
+# Popup dialog for resolving duplicate names in the maya outliner
+# zachjantz 06-16-2025
 
 from PySide2 import QtWidgets, QtCore
 import maya.cmds as cmds
-import util
-
 
 
 

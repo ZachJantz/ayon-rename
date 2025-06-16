@@ -1,8 +1,5 @@
-
-# HPC rename tool v01
-# zach jantz
-# 06/21/2024
-
+# Rename tool for ensuring ayon compatible scenes and assisting in asset processing
+# zachjantz 06-16-2025
 
 
 from PySide2 import QtWidgets, QtGui, QtCore
@@ -14,8 +11,9 @@ import util
 reload(dup_resolver)
 reload(util)
 
-class RenameTool(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
+
+class RenameTool(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super(RenameTool, self).__init__(parent=parent)
@@ -442,9 +440,6 @@ def main():
     ui = toolUIScript()
     return ui
 
-
-if __name__ == '__main__':
-    main()
 
 
 
