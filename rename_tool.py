@@ -1,3 +1,4 @@
+
 # HPC rename tool v01
 # zach jantz
 # 06/21/2024
@@ -8,14 +9,16 @@ from PySide2 import QtWidgets, QtGui, QtCore
 import maya.cmds as cmds
 from maya import OpenMayaUI as omui
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
-from collections import Counter
+import dup_resolver
+import util
+reload(dup_resolver)
+reload(util)
 
-
-class HpcRenameTool(MayaQWidgetDockableMixin, QtWidgets.QWidget):
+class RenameTool(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
 
     def __init__(self, parent=None):
-        super(HpcRenameTool, self).__init__(parent=parent)
+        super(RenameTool, self).__init__(parent=parent)
         self.setWindowTitle("Rename Tool")
 
         # UI
@@ -190,6 +193,12 @@ class HpcRenameTool(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         propagate_button.clicked.connect(self.parent_name_to_child)
         propagate_button.setToolTip("Rename the objects in a selected group based on the group name.")
 
+        dup_button = QtWidgets.QPushButton("Duplicate Check")
+        ut_hlayout1.addWidget(dup_button)
+        dup_button.clicked.connect(self.run_dup_resolve)
+        dup_button.setToolTip("Checks scene for duplicate names in different heirarchies.")
+
+        # validation
         validate_button = QtWidgets.QPushButton("Ayon Pre-check")
         ut_hlayout2.addWidget(validate_button)
         validate_button.clicked.connect(self.run_ayon_precheck)
@@ -197,16 +206,6 @@ class HpcRenameTool(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         self.resolve_checkbox = QtWidgets.QCheckBox("Autoresolve")
         ut_hlayout2.addWidget(self.resolve_checkbox)
-
-
-    def is_group(self, node):
-        """
-        Returns True if a node is a group node
-        """
-        if not cmds.listRelatives(node, shapes=1):
-            return True
-        else:
-            return False
 
 
     def rename_node(self, node_name, new_name):
@@ -242,8 +241,8 @@ class HpcRenameTool(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         # Remove suffix
         p_name = parent_node.replace("_GRP", '')
 
-        if self.is_group(parent_node):
-            children = [node for node in cmds.listRelatives(parent_node) if not self.is_group(node)]
+        if util.is_group(parent_node):
+            children = [node for node in cmds.listRelatives(parent_node) if not util.is_group(node)]
             cmds.undoInfo(openChunk=True) # Creates a undo block that sits as one action in the undo stack.
             for i in range(len(children)):
                 child = children[i]
@@ -313,7 +312,7 @@ class HpcRenameTool(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
             start_node = cmds.ls(sl=1)
 
-            if len(start_node)==1 and self.is_group(start_node[0]):
+            if len(start_node)==1 and util.is_group(start_node[0]):
 
                 return self.walk_heirarchy(start_node[0])
 
@@ -362,55 +361,12 @@ class HpcRenameTool(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             cmds.undoInfo(closeChunk=True)
 
 
-    def ayon_validate_grps(self):
-
-        # Check that all groups end in '_GRP'
-        scene_grps = [node for node in cmds.ls(tr=1) if self.is_group(node)]
-        invalid_grps  = []
-        for grp in scene_grps:
-            if grp.endswith("_GRP") is False:
-                invalid_grps.append(grp)
-
-        return invalid_grps
-
-
-    def ayon_validate_geo(self):
-
-        # Check that all geo end with '_GEO'
-        ignore = ['front','side','persp','top']
-        scene_geo = [node for node in cmds.ls(tr=1) if self.is_group(node) is False and node not in ignore]
-        invalid_geo  = []
-        for geo in scene_geo:
-            if geo.endswith("_GEO") is False:
-                invalid_geo.append(geo)
-
-        return invalid_geo
-
-
-    def ayon_validate_shaders(self):
-        
-        # Check that all shader nodes end with either '_SH', '_SG', or '_DSP'
-        ignore = ['lambert1','particleCloud1', 'standardSurface1']
-        scene_shaders = [mat for mat in cmds.ls(mat=1) if mat not in ignore]
-        invalid_shaders = []
-        for shader in scene_shaders:
-            if shader.endswith(("_SH","_SG","_DSP")) is False:
-                invalid_shaders.append(shader)
-        
-        return invalid_shaders
-
-
-    def detect_duplicates(self):
-        """
-        Detects duplicate naming in the scene file that might be go unnoticed in different heirarchies
-        """
-        all_names = []
-        all_names.append(cmds.ls(tr=1))
-        all_names.append(cmds.ls(mat=1))
-
-        counts = Counter(all_names)
-
-        return [dup for dup, count in counts.items if count>1]
+    def run_dup_resolve(self):
+        # Detect and resolve any duplicate naming before checking ayon validity
+        detected_dups = util.detect_duplicates()
+        if detected_dups:
+            dialog = dup_resolver.DuplicateResolver(detected_dups, self)
+            dialog.exec_()
 
 
     def run_ayon_precheck(self):
@@ -418,11 +374,13 @@ class HpcRenameTool(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         Executes checks for ayon naming validations in your scene and if enabled resolves any issues.
         Invalidaties are stored in a dictionary to be resolved or selected for the user.
         """
-        invalid = {'grp':self.ayon_validate_grps(), 
-                   'geo':self.ayon_validate_geo(),
-                   'sh':self.ayon_validate_shaders(),
-                   'dup':self.detect_duplicates()}
-        print(self.detect_duplicates())
+        self.run_dup_resolve()
+
+        # Run naming
+        invalid = {'grp':util.ayon_validate_grps(), 
+                'geo':util.ayon_validate_geo(),
+                'sh':util.ayon_validate_shaders()
+                }
 
         if all(not lst for lst in invalid.values()):
             print("pass")
@@ -464,7 +422,7 @@ def toolUIScript(restore=False):
 	  # Grab the created workspace control with the following.
       restoredControl = omui.MQtUtil.getCurrentParent()
 
-  customMixinWindow = HpcRenameTool()  
+  customMixinWindow = RenameTool()  
   if customMixinWindow is None:
 	  # Create a custom mixin widget for the first time
       customMixinWindow.setObjectName('renameToolCustomWindow')
