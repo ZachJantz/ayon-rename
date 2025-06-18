@@ -1,9 +1,11 @@
 # Launch script for the rename tool
 # zachjantz 06-16-2025
 
-from rename_tool import main
+import rename_tool
+#required for testing in maya
+#reload(rename_tool)
 
 
 
 if __name__ == '__main__':
-    main()
+    rename_tool.main()

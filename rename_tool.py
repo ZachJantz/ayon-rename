@@ -8,6 +8,7 @@ from maya import OpenMayaUI as omui
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 import dup_resolver
 import util
+# required for testing in maya
 # reload(dup_resolver)
 # reload(util)
 
@@ -235,18 +236,20 @@ class RenameTool(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         Name the objects in a selected group based on based on the group name.
         Assumes that the group has the '_GRP' suffix
         """
-        parent_node = cmds.ls(sl=1, fl=1)[0]
+        parent = cmds.ls(sl=1, fl=1)
+        if parent:
         # Remove suffix
-        p_name = parent_node.replace("_GRP", '')
+            parent_node = parent[0]
+            p_name = parent_node.replace("_GRP", '')
 
-        if util.is_group(parent_node):
-            children = [node for node in cmds.listRelatives(parent_node) if not util.is_group(node)]
-            cmds.undoInfo(openChunk=True) # Creates a undo block that sits as one action in the undo stack.
-            for i in range(len(children)):
-                child = children[i]
-                c_name = p_name + "_" + self.pad_num(i + 1, self.padding_input.value()) + "_GEO"
-                self.rename_node(child, c_name)
-            cmds.undoInfo(closeChunk=True)
+            if util.is_group(parent_node):
+                children = [node for node in cmds.listRelatives(parent_node) if not util.is_group(node)]
+                cmds.undoInfo(openChunk=True) # Creates a undo block that sits as one action in the undo stack.
+                for i in range(len(children)):
+                    child = children[i]
+                    c_name = p_name + "_" + self.pad_num(i + 1, self.padding_input.value()) + "_GEO"
+                    self.rename_node(child, c_name)
+                cmds.undoInfo(closeChunk=True)
 
 
     def structured_rename(self):
