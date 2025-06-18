@@ -8,8 +8,8 @@ from maya import OpenMayaUI as omui
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 import dup_resolver
 import util
-reload(dup_resolver)
-reload(util)
+# reload(dup_resolver)
+# reload(util)
 
 
 

@@ -1,6 +1,7 @@
+# Collection of utility functions for the rename tool
+
 import maya.cmds as cmds
 from collections import defaultdict
-
 
 
 
