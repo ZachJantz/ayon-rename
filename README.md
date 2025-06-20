@@ -18,6 +18,13 @@ Allows the user to find specific strings in node names and replace them.
 - Search will just select the nodes in the given context that contain the input string.
 - Replace will replace the search string with a string for nodes in the enabled context.
 - To search the entire outliner, make sure the option is set to all.
+### Propogate Group Name
+Added this because if you have a big model where you are working with a bunch of groups it makes it easier to just name a group and press the button.
+- Takes the name of a group and names the geo inside based off the group name, i.e., parts_GRP -> parts_01_GEO.
+### Duplicate Check
+Check for duplicate names in different heirarchies.
+- Launches a dialog that displays conflicting names and the paths to those names.
+- Select the paths and enter a new compliant name.
 ## Dev
 
 
