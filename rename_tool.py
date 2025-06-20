@@ -8,9 +8,8 @@ from maya import OpenMayaUI as omui
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 import dup_resolver
 import util
-# required for testing in maya
-# reload(dup_resolver)
-# reload(util)
+import alert_footer
+
 
 
 
@@ -206,6 +205,10 @@ class RenameTool(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.resolve_checkbox = QtWidgets.QCheckBox("Autoresolve")
         ut_hlayout2.addWidget(self.resolve_checkbox)
 
+        # Status footer
+        self.footer = alert_footer.AlertFooter()
+        main_vlayout1.addWidget(self.footer)
+
 
     def rename_node(self, node_name, new_name):
 
@@ -313,7 +316,7 @@ class RenameTool(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
             start_node = cmds.ls(sl=1)
 
-            if len(start_node)==1 and util.is_group(start_node[0]):
+            if len(start_node)==1:
 
                 return self.walk_heirarchy(start_node[0])
 
@@ -368,6 +371,8 @@ class RenameTool(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         if detected_dups:
             dialog = dup_resolver.DuplicateResolver(detected_dups, self)
             dialog.exec_()
+        else:
+            self.footer.show_success("No Duplicates Detected")
 
 
     def run_ayon_precheck(self):
@@ -384,7 +389,7 @@ class RenameTool(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 }
 
         if all(not lst for lst in invalid.values()):
-            print("pass")
+            self.footer.show_success("Passed Ayon Naming Validation")
 
         else:
             if self.resolve_checkbox.isChecked():
@@ -398,7 +403,7 @@ class RenameTool(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                         cmds.select(item,add=1)
 
 
-    #TODO
+    #TODO shader check
     def ayon_auto_resolve(self,invalid):
         
         cmds.undoInfo(openChunk=True)
